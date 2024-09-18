@@ -5,9 +5,11 @@ import { Button } from './ui/button';
 
 interface AddCashProps {
   portfolioId: string;
+  userId: string;
+
 }
 
-const AddCash: React.FC<AddCashProps> = ({ portfolioId }) => {
+const AddCash: React.FC<AddCashProps> = ({ portfolioId, userId }) => {
   const [amount, setAmount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -19,6 +21,7 @@ const AddCash: React.FC<AddCashProps> = ({ portfolioId }) => {
     try {
       const response = await axios.post('http://localhost:5000/add_cash', {
         portfolio_id: portfolioId,
+        user_id: userId,
         amount: amount,
       });
 
@@ -31,6 +34,7 @@ const AddCash: React.FC<AddCashProps> = ({ portfolioId }) => {
       setMessage(`Error: ${error.response?.data?.error || error.message}`);
     } finally {
       setLoading(false);
+      window.location.reload()
     }
   };
 

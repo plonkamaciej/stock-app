@@ -70,9 +70,9 @@
   }
 
   :root {
-    --scrollbar-width:8px;
+    --scrollbar-width:4px;
     --scrollbar-bg: var(--background);
-    --scrollbar-thumb: #754487;
+    --scrollbar-thumb: #3b82f6
 }
 
 body::-webkit-scrollbar {
@@ -87,6 +87,20 @@ body::-webkit-scrollbar-track {
 body::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
     border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--scrollbar-bg);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 10px;
 }
 
 }
