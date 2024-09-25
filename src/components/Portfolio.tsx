@@ -142,6 +142,8 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
     { label: 'Max', value: 'max' },
   ]
 
+  console.log(portfolioId)
+
   // Fetch portfolio data
   useEffect(() => {
     isMounted.current = true
