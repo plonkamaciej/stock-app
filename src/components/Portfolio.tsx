@@ -157,9 +157,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
         }
       } catch (err) {
         console.error(err)
-        if (isMounted.current) {
-          setError('Failed to load portfolio data.')
-        }
+
       } finally {
         if (isMounted.current) {
           setLoading(false)
@@ -244,27 +242,12 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
     return <p>{error}</p>
   }
 
-  if (!portfolio || portfolio.stocks.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Your Portfolio</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>
-            You currently have no stocks in your portfolio. Start adding some stocks to see them here.
-          </p>
-          <AddCash portfolioId={portfolioId} userId={userId} />
-          <StockTransaction userId={userId} portfolioId={portfolioId} />
-        </CardContent>
-      </Card>
-    )
-  }
+
 
   // Filter out stocks with quantity of 0
-  const nonZeroStocks = portfolio.stocks.filter((stock) => stock.quantity > 0)
+  const nonZeroStocks = portfolio?.stocks.filter((stock) => stock.quantity > 0)
 
-  if (nonZeroStocks.length === 0) {
+  if (nonZeroStocks?.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -313,7 +296,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
   <CardContent>
     <div className="mt-4 max-h-96 overflow-y-scroll custom-scrollbar">
       <ul className="list-inside list-disc">
-        {nonZeroStocks.map((stock) => (
+        {nonZeroStocks?.map((stock) => (
           <li
             key={stock.stock_symbol}
             className="mb-4 flex cursor-pointer items-center"
@@ -362,7 +345,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
         </CardContent>
       </Card>
 
-      <CashBalanceCard userId={userId} />
+      <CashBalanceCard userId={userId} portfolioId={portfolioId} />
 
 
       {/* Modal for Stock Details */}
