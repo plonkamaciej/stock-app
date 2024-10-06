@@ -45,26 +45,7 @@ const CashBalanceCard: React.FC<CashBalanceCardProps> = ({ userId, portfolioId }
     fetchPortfolioData()
   }, [userId])
 
-  // Fetch investment chart data
-  useEffect(() => {
-    const fetchInvestmentChartData = async () => {
-      setLoadingChart(true)
-      try {
-        const chartResponse = await axios.get('http://localhost:5000/get_investment_chart_data', {
-          params: { user_id: userId },
-        })
-        setInvestmentData(chartResponse.data.investment_over_time)
-      } catch (err: any) {
-        console.error(err)
-      } finally {
-        setLoadingChart(false)
-      }
-    }
-
-    fetchInvestmentChartData()
-  }, [userId])
-
-  // Fetch portfolio history data for the second line
+  // Fetch portfolio history data for return_value and invested_value
   useEffect(() => {
     const fetchPortfolioHistory = async () => {
       setLoadingHistory(true)
@@ -84,17 +65,7 @@ const CashBalanceCard: React.FC<CashBalanceCardProps> = ({ userId, portfolioId }
     fetchPortfolioHistory()
   }, [portfolioId])
 
-  const isLoading = loadingPortfolio || loadingChart || loadingHistory
-
-  const mergedData = historyData.map((history) => {
-    const investment = investmentData.find(i => i.date === history.created_at) || {};
-    return {
-      date: history.created_at,
-      return_value: history.return_value,
-      invested_amount: investment.invested_amount || null,  // Use null if there's no matching invested amount
-    };
-  });
-  
+  const isLoading = loadingPortfolio || loadingHistory
 
   const formatXAxisDate = (tickItem: string) => {
     const date = new Date(tickItem)
@@ -113,14 +84,14 @@ const CashBalanceCard: React.FC<CashBalanceCardProps> = ({ userId, portfolioId }
     borderColor: '#ccc',
   }
 
-  if (portfolioError || chartError || historyError) {
+  if (portfolioError || historyError) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Portfolio Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <p>{portfolioError || chartError || historyError}</p>
+          <p>{portfolioError || historyError}</p>
         </CardContent>
       </Card>
     )
@@ -140,32 +111,33 @@ const CashBalanceCard: React.FC<CashBalanceCardProps> = ({ userId, portfolioId }
   }
 
   return (
-<Card>
-  <CardHeader>
-    <CardTitle className="text-xl">Portfolio Overview</CardTitle>
-  </CardHeader>
-  <CardContent>
-    <p>Cash Balance: ${cashBalance?.toFixed(2)}</p>
-    <p>Total Stocks Value: ${totalStocksValue?.toFixed(2)}</p>
-    <p>Total Portfolio Value: ${totalPortfolioValue?.toFixed(2)}</p>
-    <p>Your money invested: ${totalInvested?.toFixed(2)}</p>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-xl">
+          Portfolio Overview - Zwrot całkowity: {(((totalPortfolioValue ?? 0) / (totalInvested ?? 1))).toFixed(2)}%
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p>Cash Balance: ${cashBalance?.toFixed(2)}</p>
+        <p>Total Stocks Value: ${totalStocksValue?.toFixed(2)}</p>
+        <p>Total Portfolio Value: ${totalPortfolioValue?.toFixed(2)}</p>
+        <p>Your money invested: ${totalInvested?.toFixed(2)}</p>
 
-    <ResponsiveContainer width="100%" height={300} className="p-3 mt-8">
-      <LineChart data={mergedData}> {/* Use the merged dataset */}
-        <XAxis dataKey="date" tickFormatter={formatXAxisDate} />
-        <YAxis />
-        <Tooltip contentStyle={tooltipStyle} />
-        
-        {/* Line for Invested Amount */}
-        <Line type="monotone" dataKey="invested_amount" stroke="#8884d8" />
+        <ResponsiveContainer width="100%" height={300} className="p-3 mt-8">
+          <LineChart data={historyData}> {/* Plot return_value and invested_value */}
+            <XAxis dataKey="created_at" tickFormatter={formatXAxisDate} />
+            <YAxis />
+            <Tooltip contentStyle={tooltipStyle} />
+            
+            {/* Line for Invested Value */}
+            <Line type="monotone" dataKey="invested_value" stroke="#8884d8" />
 
-        {/* Line for Portfolio Return Value */}
-        <Line type="monotone" dataKey="return_value" stroke="#82ca9d" />
-      </LineChart>
-    </ResponsiveContainer>
-  </CardContent>
-</Card>
-
+            {/* Line for Return Value */}
+            <Line type="monotone" dataKey="return_value" stroke="#82ca9d" />
+          </LineChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
   )
 }
 

@@ -11,10 +11,12 @@ import 'chartjs-adapter-date-fns'
 import { Button } from './ui/button'
 import ReactDOM from 'react-dom'
 import CashBalanceCard from './CashBalanceCard'
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 
 // Import Crosshair Plugin
 import CrosshairPlugin from 'chartjs-plugin-crosshair'
 import Chart from 'chart.js/auto'
+import Watchlist from './Watchlist'
 
 // Register the Crosshair Plugin
 Chart.register(CrosshairPlugin)
@@ -234,18 +236,9 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
     ],
   } : null
 
-  if (loading) {
-    return <p>Loading...</p>
-  }
-
-  if (error) {
-    return <p>{error}</p>
-  }
-
-
-
   // Filter out stocks with quantity of 0
-  const nonZeroStocks = portfolio?.stocks.filter((stock) => stock.quantity > 0)
+  const nonZeroStocks = portfolio?.stocks.filter((stock) => stock.quantity > 0) || [];
+  console.log(nonZeroStocks)
 
   if (nonZeroStocks?.length === 0) {
     return (
@@ -256,7 +249,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
         <CardContent>
           <p>You currently have no valid stocks in your portfolio.</p>
           <AddCash portfolioId={portfolioId} userId={userId}/>
-          <StockTransaction userId={userId} portfolioId={portfolioId} />
+          <StockTransaction userId={userId} portfolioId={portfolioId} ownedStocks={nonZeroStocks}/>
         </CardContent>
       </Card>
     )
@@ -287,45 +280,90 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
     )
   }
 
+  // Funkcja do generowania koloru tła
+  const generateBackgroundColor = (symbol: string) => {
+    let hash = 0;
+    for (let i = 0; i < symbol.length; i++) {
+      hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = hash % 360;
+    return `hsl(${hue}, 70%, 80%)`;
+  };
+
+  const onDragEnd = (result: any) => {
+    if (!result.destination || !portfolio) {
+      return;
+    }
+
+    const items = Array.from(portfolio.stocks);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setPortfolio({ stocks: items });
+  };
+
   return (
     <div className="grid grid-cols-2 gap-5">
-<Card>
-  <CardHeader>
-    <CardTitle className="text-xl">Portfolio Stocks</CardTitle>
-  </CardHeader>
-  <CardContent>
-    <div className="mt-4 max-h-96 overflow-y-scroll custom-scrollbar">
-      <ul className="list-inside list-disc">
-        {nonZeroStocks?.map((stock) => (
-          <li
-            key={stock.stock_symbol}
-            className="mb-4 flex cursor-pointer items-center"
-            onClick={() => {
-              setSelectedStock(stock)
-              setTimeframe('1mo') // Reset timeframe when a new stock is selected
-            }}
-          >
-            <div className="mr-5 flex h-[80px] w-[80px] items-center justify-center rounded-lg bg-black">
-              <p className="text-2xl font-extrabold text-white">
-                {stock.stock_symbol}
-              </p>
-            </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Portfolio Stocks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="stocks">
+              {(provided) => (
+                <ul 
+                  {...provided.droppableProps} 
+                  ref={provided.innerRef}
+                  className="mt-4 max-h-96 overflow-y-auto space-y-2"
+                >
+                  {nonZeroStocks?.map((stock, index) => (
+                    <Draggable key={stock.stock_symbol} draggableId={stock.stock_symbol} index={index}>
+                      {(provided, snapshot) => (
+                        <li
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={`rounded-lg p-4 ease-in-out cursor-pointer
+                            ${snapshot.isDragging ? 'bg-accent shadow-lg' : 'bg-card hover:bg-accent/50'}`}
+                          onClick={() => {
+                            setSelectedStock(stock)
+                            setTimeframe('1mo')
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              <div 
+                                className="h-12 w-12 rounded-full flex items-center justify-center text-primary-foreground font-bold"
+                                style={{ backgroundColor: generateBackgroundColor(stock.stock_symbol) }}
+                              >
+                                {stock.stock_symbol.slice(0, 2)}
+                              </div>
+                              <div>
+                                <p className="font-bold text-foreground">{stock.stock_symbol}</p>
+                                <p className="text-sm text-muted-foreground">{stock.quantity.toFixed(6)} akcji</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-foreground">zł {stock.value.toFixed(2)}</p>
+                              <p className={`text-sm ${parseFloat(stock.return) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                {parseFloat(stock.return) >= 0 ? '+' : ''}{stock.return}
+                              </p>
+                            </div>
+                          </div>
+                        </li>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </ul>
+              )}
+            </Droppable>
+          </DragDropContext>
+        </CardContent>
+      </Card>
 
-            <div>
-              <p>Company Name: {stock.company_name}</p>
-              <p>Quantity: {stock.quantity}</p>
-              <p>Average Price: ${stock.average_price.toFixed(2)}</p>
-              <p>Current Price: ${stock.current_price.toFixed(2)}</p>
-              <p>Current Value: ${stock.value.toFixed(2)}</p>
-              <p>Return: {stock.return}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </CardContent>
-</Card>
-
+      <CashBalanceCard userId={userId} portfolioId={portfolioId} />
 
       {/* Stock Transactions and Add Cash Cards */}
       <Card>
@@ -333,7 +371,11 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
           <CardTitle className="text-xl">Stock Transactions</CardTitle>
         </CardHeader>
         <CardContent>
-          <StockTransaction userId={userId} portfolioId={portfolioId} />
+          <StockTransaction 
+            userId={userId} 
+            portfolioId={portfolioId} 
+            ownedStocks={nonZeroStocks}
+          />
         </CardContent>
       </Card>
       <Card>
@@ -344,10 +386,10 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
           <AddCash portfolioId={portfolioId} userId={userId} />
         </CardContent>
       </Card>
-
-      <CashBalanceCard userId={userId} portfolioId={portfolioId} />
-
-
+      <div className="col-span-2">
+        <Watchlist userId={userId} />
+      </div>
+      
       {/* Modal for Stock Details */}
       {selectedStock && (
         <Modal>
@@ -363,10 +405,11 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
             <div>
               <p>Company Name: {selectedStock.company_name}</p>
               <p>Quantity: {selectedStock.quantity}</p>
-              <p>Average Price: ${selectedStock.average_price.toFixed(2)}</p>
-              <p>Current Price: ${selectedStock.current_price.toFixed(2)}</p>
-              <p>Current Value: ${selectedStock.value.toFixed(2)}</p>
+              <p>Average Price: {selectedStock.average_price.toFixed(2)}$</p>
+              <p>Current Price: {selectedStock.current_price.toFixed(2)}$</p>
+              <p>Current Value: {selectedStock.value.toFixed(2)}$</p>
               <p>Return: {selectedStock.return}</p>
+              <p>Reurn in USD: {((selectedStock.current_price - selectedStock.average_price)*selectedStock.quantity).toFixed(2)}$</p>
             </div>
 
             <div className="my-4">
@@ -384,8 +427,6 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
                 ))}
               </div>
             </div>
-
-
 
             {/* Display the graph */}
             <div className="mt-5" style={{ height: '400px' }}>

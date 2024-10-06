@@ -1,0 +1,35 @@
+export const stockSymbolList = [
+    // Popularne akcje z S&P 500
+    { symbol: 'AAPL', name: 'Apple Inc.' },
+    { symbol: 'MSFT', name: 'Microsoft Corporation' },
+    { symbol: 'AMZN', name: 'Amazon.com Inc.' },
+    { symbol: 'GOOGL', name: 'Alphabet Inc. Class A' },
+    { symbol: 'FB', name: 'Meta Platforms Inc.' },
+    { symbol: 'TSLA', name: 'Tesla Inc.' },
+    { symbol: 'BRK.B', name: 'Berkshire Hathaway Inc. Class B' },
+    { symbol: 'NVDA', name: 'NVIDIA Corporation' },
+    { symbol: 'JPM', name: 'JPMorgan Chase & Co.' },
+    { symbol: 'JNJ', name: 'Johnson & Johnson' },
+    { symbol: 'V', name: 'Visa Inc.' },
+    { symbol: 'UNH', name: 'UnitedHealth Group Incorporated' },
+    { symbol: 'HD', name: 'The Home Depot Inc.' },
+    { symbol: 'PG', name: 'The Procter & Gamble Company' },
+    { symbol: 'MA', name: 'Mastercard Incorporated' },
+    { symbol: 'DIS', name: 'The Walt Disney Company' },
+    { symbol: 'ADBE', name: 'Adobe Inc.' },
+    { symbol: 'CRM', name: 'Salesforce Inc.' },
+    { symbol: 'NFLX', name: 'Netflix Inc.' },
+    { symbol: 'CMCSA', name: 'Comcast Corporation' },
+  
+    // Popularne ETF-y
+    { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust' },
+    { symbol: 'VOO', name: 'Vanguard S&P 500 ETF' },
+    { symbol: 'QQQ', name: 'Invesco QQQ Trust' },
+    { symbol: 'VTI', name: 'Vanguard Total Stock Market ETF' },
+    { symbol: 'IVV', name: 'iShares Core S&P 500 ETF' },
+    { symbol: 'VEA', name: 'Vanguard FTSE Developed Markets ETF' },
+    { symbol: 'IEFA', name: 'iShares Core MSCI EAFE ETF' },
+    { symbol: 'AGG', name: 'iShares Core U.S. Aggregate Bond ETF' },
+    { symbol: 'VWO', name: 'Vanguard FTSE Emerging Markets ETF' },
+    { symbol: 'BND', name: 'Vanguard Total Bond Market ETF' }
+  ];
