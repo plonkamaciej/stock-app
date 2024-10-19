@@ -15,12 +15,14 @@ interface StockTransactionProps {
     stock_symbol: string;
     quantity: number;
   }[];
+  onTransactionComplete: () => void; // Nowa funkcja prop
 }
 
 const StockTransaction: React.FC<StockTransactionProps> = ({
   userId,
   portfolioId,
   ownedStocks,
+  onTransactionComplete,
 }) => {
   const [stockSymbol, setStockSymbol] = useState('');
   const [transactionType, setTransactionType] = useState<'buy' | 'sell'>('buy');
@@ -134,6 +136,7 @@ const StockTransaction: React.FC<StockTransactionProps> = ({
         );
         setCashBalance(updatedBalanceResponse.data.cash_balance);
         setTotalPortfolioValue(updatedBalanceResponse.data.total_portfolio_value);
+        onTransactionComplete(); // Wywołaj funkcję po udanej transakcji
       } else {
         setMessage('Failed to buy shares.');
       }
@@ -142,6 +145,7 @@ const StockTransaction: React.FC<StockTransactionProps> = ({
       setMessage(`Error: ${error.response?.data?.error || error.message}`);
     } finally {
       setLoading(false);
+      setIsBuyModalOpen(false); // Zamknij modal po zakończeniu transakcji
     }
   };
 
@@ -173,6 +177,7 @@ const StockTransaction: React.FC<StockTransactionProps> = ({
         );
         setCashBalance(updatedBalanceResponse.data.cash_balance);
         setTotalPortfolioValue(updatedBalanceResponse.data.total_portfolio_value);
+        onTransactionComplete(); // Wywołaj funkcję po udanej transakcji
       } else {
         setMessage('Nie udało się sprzedać akcji.');
       }

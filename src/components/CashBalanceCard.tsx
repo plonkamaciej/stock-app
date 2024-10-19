@@ -53,10 +53,24 @@ const CashBalanceCard: React.FC<CashBalanceCardProps> = ({ userId, portfolioId }
         const historyResponse = await axios.get('http://localhost:5000/get_portfolio_history', {
           params: { portfolio_id: portfolioId }, 
         })
-        setHistoryData(historyResponse.data)
+        
+        // Dodaj punkt zerowy przed pierwszą inwestycją
+        const sortedData = historyResponse.data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        if (sortedData.length > 0) {
+          const firstDate = new Date(sortedData[0].created_at);
+          firstDate.setDate(firstDate.getDate() - 1); // Ustaw datę na dzień przed pierwszą inwestycją
+          const zeroPoint = {
+            created_at: firstDate.toISOString(),
+            invested_value: 0,
+            return_value: 0
+          };
+          sortedData.unshift(zeroPoint);
+        }
+        
+        setHistoryData(sortedData)
       } catch (err: any) {
         console.error(err)
-        setHistoryError('Failed to load portfolio history data.')
+        setHistoryError('Nie udało się załadować danych historycznych portfela.')
       } finally {
         setLoadingHistory(false)
       }
@@ -114,7 +128,7 @@ const CashBalanceCard: React.FC<CashBalanceCardProps> = ({ userId, portfolioId }
     <Card>
       <CardHeader>
         <CardTitle className="text-xl">
-          Portfolio Overview - Zwrot całkowity: {(((totalPortfolioValue ?? 0) / (totalInvested ?? 1))).toFixed(2)}%
+          Portfolio Overview - Zwrot całkowity: ${(totalPortfolioValue - totalInvested).toFixed(2)}
         </CardTitle>
       </CardHeader>
       <CardContent>

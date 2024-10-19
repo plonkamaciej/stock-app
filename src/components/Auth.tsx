@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 
 interface AuthProps {
   onUserChange: (user: User | null, portfolioId: string | null) => void;
@@ -17,6 +18,7 @@ const Auth: React.FC<AuthProps> = ({ onUserChange }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     // Ensure the effect only runs once when the component mounts
@@ -67,6 +69,29 @@ const Auth: React.FC<AuthProps> = ({ onUserChange }) => {
     localStorage.removeItem('portfolio_id');
   }, [onUserChange]);
 
+  const handleSignUp = async () => {
+    setLoading(true);
+    try {
+        const response = await axios.post('http://localhost:5000/signup', { email, password });
+        const { user_id, portfolio_id, access_token } = response.data;
+
+        const loggedInUser: User = { id: user_id, email };
+        localStorage.setItem('access_token', access_token);
+        localStorage.setItem('user', JSON.stringify(loggedInUser));
+        localStorage.setItem('portfolio_id', portfolio_id);
+
+        setUser(loggedInUser);
+        onUserChange(loggedInUser, portfolio_id);
+        setIsModalOpen(false);
+    } catch (error: any) {
+        const errorMessage = error.response?.data?.error || "Unknown error occurred during signup";
+        console.error('Rejestracja nie powiodła się:', errorMessage);
+        alert(`Rejestracja nie powiodła się: ${errorMessage}`);
+    } finally {
+        setLoading(false);
+    }
+};
+
   return (
     <div className="space-y-4 mb-5">
       {user ? (
@@ -86,13 +111,38 @@ const Auth: React.FC<AuthProps> = ({ onUserChange }) => {
           />
           <Input
             type="password"
-            placeholder="Password"
+            placeholder="Hasło"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
           <Button onClick={handleSignIn} disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign in with Email'}
+            {loading ? 'Logowanie...' : 'Zaloguj się'}
           </Button>
+          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">Zarejestruj się</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Rejestracja</DialogTitle>
+              </DialogHeader>
+              <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <Input
+                type="password"
+                placeholder="Hasło"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <Button onClick={handleSignUp} disabled={loading}>
+                {loading ? 'Rejestracja...' : 'Zarejestruj się'}
+              </Button>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>

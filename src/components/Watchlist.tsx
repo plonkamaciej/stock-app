@@ -114,7 +114,21 @@ export const Watchlist: React.FC<WatchlistProps> = ({ userId }) => {
     try {
       setLoading(true);
       const response = await axios.get(`http://localhost:5000/watchlist?user_id=${userId}`);
-      setWatchlist(response.data);
+      const watchlistData = response.data;
+      
+      // Pobierz zapisaną kolejność z localStorage
+      const savedOrder = JSON.parse(localStorage.getItem(`watchlistOrder_${userId}`) || '[]');
+      
+      // Sortuj watchlistę według zapisanej kolejności
+      const sortedWatchlist = watchlistData.sort((a: Stock, b: Stock) => {
+        const indexA = savedOrder.indexOf(a.stock_symbol);
+        const indexB = savedOrder.indexOf(b.stock_symbol);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+
+      setWatchlist(sortedWatchlist);
       setLoading(false);
     } catch (err) {
       setError('Nie udało się załadować watchlisty');
@@ -129,7 +143,12 @@ export const Watchlist: React.FC<WatchlistProps> = ({ userId }) => {
         stock_symbol: newStock.toUpperCase()
       });
       setNewStock('');
-      fetchWatchlist();
+      await fetchWatchlist();
+      
+      // Aktualizuj kolejność w localStorage po dodaniu nowej akcji
+      const currentOrder = JSON.parse(localStorage.getItem(`watchlistOrder_${userId}`) || '[]');
+      currentOrder.push(newStock.toUpperCase());
+      localStorage.setItem(`watchlistOrder_${userId}`, JSON.stringify(currentOrder));
     } catch (err) {
       setError('Nie udało się dodać akcji do watchlisty');
     }
@@ -138,7 +157,12 @@ export const Watchlist: React.FC<WatchlistProps> = ({ userId }) => {
   const removeFromWatchlist = async (symbol: string) => {
     try {
       await axios.delete(`http://localhost:5000/watchlist/remove?user_id=${userId}&stock_symbol=${symbol}`);
-      fetchWatchlist();
+      await fetchWatchlist();
+      
+      // Aktualizuj kolejność w localStorage po usunięciu akcji
+      const currentOrder = JSON.parse(localStorage.getItem(`watchlistOrder_${userId}`) || '[]');
+      const updatedOrder = currentOrder.filter((item: string) => item !== symbol);
+      localStorage.setItem(`watchlistOrder_${userId}`, JSON.stringify(updatedOrder));
     } catch (err) {
       setError('Nie udało się usunąć akcji z watchlisty');
     }
@@ -171,7 +195,10 @@ export const Watchlist: React.FC<WatchlistProps> = ({ userId }) => {
     items.splice(result.destination.index, 0, reorderedItem);
 
     setWatchlist(items);
-    // Tutaj możesz dodać logikę do zapisania nowej kolejności w bazie danych
+
+    // Zapisz nową kolejność w localStorage
+    const newOrder = items.map(item => item.stock_symbol);
+    localStorage.setItem(`watchlistOrder_${userId}`, JSON.stringify(newOrder));
   };
 
   return (

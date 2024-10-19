@@ -1,6 +1,6 @@
 // Portfolio.tsx
 
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import axios from 'axios'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import StockTransaction from './StockTransaction'
@@ -17,6 +17,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import CrosshairPlugin from 'chartjs-plugin-crosshair'
 import Chart from 'chart.js/auto'
 import Watchlist from './Watchlist'
+import { Loader2 } from 'lucide-react'
 
 // Register the Crosshair Plugin
 Chart.register(CrosshairPlugin)
@@ -131,6 +132,9 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
   const [historicalLoading, setHistoricalLoading] = useState<boolean>(false)
   const [historicalError, setHistoricalError] = useState<string | null>(null)
   const [timeframe, setTimeframe] = useState<string>('1mo') // Default timeframe
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [stockOrder, setStockOrder] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const isMounted = useRef(true) // To prevent setting state on unmounted component
 
@@ -146,33 +150,39 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
 
   console.log(portfolioId)
 
+  // Funkcja do wymuszenia ponownego renderowania
+  const handleTransactionComplete = useCallback(() => {
+    setRefreshKey(prevKey => prevKey + 1);
+  }, []);
+
   // Fetch portfolio data
   useEffect(() => {
-    isMounted.current = true
-    const fetchPortfolio = async () => {
+    const fetchData = async () => {
+      setIsLoading(true);
       try {
+        // Pobieranie danych portfolio
         const response = await axios.get('http://localhost:5000/get_all_stocks', {
           params: { user_id: userId },
-        })
-        if (isMounted.current) {
-          setPortfolio({ stocks: response.data.owned_stocks })
+        });
+        setPortfolio({ stocks: response.data.owned_stocks });
+
+        // Ładowanie zapisanego porządku z localStorage
+        const savedOrder = localStorage.getItem(`stockOrder_${userId}`);
+        if (savedOrder) {
+          setStockOrder(JSON.parse(savedOrder));
         }
+
+        // Tutaj możesz dodać inne zapytania, jeśli są potrzebne
       } catch (err) {
-        console.error(err)
-
+        console.error(err);
+        setError('Wystąpił błąd podczas ładowania danych.');
       } finally {
-        if (isMounted.current) {
-          setLoading(false)
-        }
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchPortfolio()
-
-    return () => {
-      isMounted.current = false
-    }
-  }, [userId])
+    fetchData();
+  }, [userId, refreshKey]);
 
   // Fetch historical data when a stock or timeframe is selected
   useEffect(() => {
@@ -240,18 +250,102 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
   const nonZeroStocks = portfolio?.stocks.filter((stock) => stock.quantity > 0) || [];
   console.log(nonZeroStocks)
 
+  useEffect(() => {
+    // Ładowanie zapisanego porządku z localStorage
+    const savedOrder = localStorage.getItem(`stockOrder_${userId}`);
+    if (savedOrder) {
+      setStockOrder(JSON.parse(savedOrder));
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    // Aktualizacja stockOrder, gdy portfolio się zmieni
+    if (portfolio?.stocks) {
+      const newOrder = stockOrder.length > 0
+        ? stockOrder.filter(symbol => portfolio.stocks.some(stock => stock.stock_symbol === symbol))
+        : portfolio.stocks.map(stock => stock.stock_symbol);
+      setStockOrder(newOrder);
+    }
+  }, [portfolio]);
+
+  const onDragEnd = (result: any) => {
+    if (!result.destination || !portfolio) {
+      return;
+    }
+
+    const newOrder = Array.from(stockOrder);
+    const [reorderedItem] = newOrder.splice(result.source.index, 1);
+    newOrder.splice(result.destination.index, 0, reorderedItem);
+
+    setStockOrder(newOrder);
+    localStorage.setItem(`stockOrder_${userId}`, JSON.stringify(newOrder));
+  };
+
+  // Sortowanie akcji zgodnie z zapisanym porządkiem
+  const sortedStocks = useMemo(() => {
+    if (!portfolio?.stocks) return [];
+    return [...portfolio.stocks].sort((a, b) => {
+      const indexA = stockOrder.indexOf(a.stock_symbol);
+      const indexB = stockOrder.indexOf(b.stock_symbol);
+      return indexA - indexB;
+    });
+  }, [portfolio, stockOrder]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="mr-2 h-16 w-16 animate-spin" />
+        <span className="text-xl font-semibold">Ładowanie danych...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <span className="text-xl font-semibold text-red-500">{error}</span>
+      </div>
+    );
+  }
+
   if (nonZeroStocks?.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Your Portfolio</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>You currently have no valid stocks in your portfolio.</p>
-          <AddCash portfolioId={portfolioId} userId={userId}/>
-          <StockTransaction userId={userId} portfolioId={portfolioId} ownedStocks={nonZeroStocks}/>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-2 gap-5">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Twoje Portfolio</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Aktualnie nie posiadasz żadnych akcji w swoim portfolio.</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Dodaj Środki</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AddCash portfolioId={portfolioId} userId={userId}/>
+          </CardContent>
+        </Card>
+        
+        <Card className="col-span-2">
+          <CardHeader>
+            <CardTitle className="text-xl">Transakcje Akcji</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StockTransaction 
+              userId={userId} 
+              portfolioId={portfolioId} 
+              ownedStocks={nonZeroStocks}
+              onTransactionComplete={handleTransactionComplete}
+            />
+          </CardContent>
+        </Card>
+
+            <Watchlist userId={userId} />
+
+      </div>
     )
   }
 
@@ -290,18 +384,6 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
     return `hsl(${hue}, 70%, 80%)`;
   };
 
-  const onDragEnd = (result: any) => {
-    if (!result.destination || !portfolio) {
-      return;
-    }
-
-    const items = Array.from(portfolio.stocks);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-
-    setPortfolio({ stocks: items });
-  };
-
   return (
     <div className="grid grid-cols-2 gap-5">
       <Card>
@@ -317,7 +399,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
                   ref={provided.innerRef}
                   className="mt-4 max-h-96 overflow-y-auto space-y-2"
                 >
-                  {nonZeroStocks?.map((stock, index) => (
+                  {sortedStocks.map((stock, index) => (
                     <Draggable key={stock.stock_symbol} draggableId={stock.stock_symbol} index={index}>
                       {(provided, snapshot) => (
                         <li
@@ -345,7 +427,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-foreground">zł {stock.value.toFixed(2)}</p>
+                              <p className="font-bold text-foreground">$ {stock.value.toFixed(2)}</p>
                               <p className={`text-sm ${parseFloat(stock.return) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                 {parseFloat(stock.return) >= 0 ? '+' : ''}{stock.return}
                               </p>
@@ -375,6 +457,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
             userId={userId} 
             portfolioId={portfolioId} 
             ownedStocks={nonZeroStocks}
+            onTransactionComplete={handleTransactionComplete}
           />
         </CardContent>
       </Card>
