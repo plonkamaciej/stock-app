@@ -140,12 +140,12 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
 
   // Timeframe options mapping
   const timeframeOptions = [
-    { label: '1 Day', value: '1d' },
-    { label: '1 Month', value: '1mo' },
-    { label: '1 Year', value: '1y' },
-    { label: '2 Years', value: '2y' },
-    { label: '5 Years', value: '5y' },
-    { label: 'Max', value: 'max' },
+    { label: '1 Dzień', value: '1d' },
+    { label: '1 Miesiąc', value: '1mo' },
+    { label: '1 Rok', value: '1y' },
+    { label: '2 Lata', value: '2y' },
+    { label: '5 Lat', value: '5y' },
+    { label: 'Maks.', value: 'max' },
   ]
 
   console.log(portfolioId)
@@ -343,8 +343,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
           </CardContent>
         </Card>
 
-            <Watchlist userId={userId} />
-
+        <Watchlist userId={userId} />
       </div>
     )
   }
@@ -388,7 +387,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
     <div className="grid grid-cols-2 gap-5">
       <Card>
         <CardHeader>
-          <CardTitle>Portfolio Stocks</CardTitle>
+          <CardTitle>Akcje w Portfolio</CardTitle>
         </CardHeader>
         <CardContent>
           <DragDropContext onDragEnd={onDragEnd}>
@@ -397,7 +396,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
                 <ul 
                   {...provided.droppableProps} 
                   ref={provided.innerRef}
-                  className="mt-4 max-h-96 overflow-y-auto space-y-2"
+                  className="mt-4 max-h-96 overflow-y-auto space-y-2 custom-scrollbar"
                 >
                   {sortedStocks.map((stock, index) => (
                     <Draggable key={stock.stock_symbol} draggableId={stock.stock_symbol} index={index}>
@@ -427,7 +426,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-foreground">$ {stock.value.toFixed(2)}</p>
+                              <p className="font-bold text-foreground">{stock.value.toFixed(2)} $</p>
                               <p className={`text-sm ${parseFloat(stock.return) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                 {parseFloat(stock.return) >= 0 ? '+' : ''}{stock.return}
                               </p>
@@ -447,10 +446,9 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
 
       <CashBalanceCard userId={userId} portfolioId={portfolioId} />
 
-      {/* Stock Transactions and Add Cash Cards */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Stock Transactions</CardTitle>
+          <CardTitle className="text-xl">Transakcje Akcji</CardTitle>
         </CardHeader>
         <CardContent>
           <StockTransaction 
@@ -463,7 +461,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Add Cash</CardTitle>
+          <CardTitle className="text-xl">Dodaj Środki</CardTitle>
         </CardHeader>
         <CardContent>
           <AddCash portfolioId={portfolioId} userId={userId} />
@@ -473,30 +471,29 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
         <Watchlist userId={userId} />
       </div>
       
-      {/* Modal for Stock Details */}
       {selectedStock && (
         <Modal>
           <div className="flex flex-col">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-bold">
-                {selectedStock.stock_symbol} Details
+                Szczegóły {selectedStock.stock_symbol}
               </h2>
               <button onClick={closeModal} className="text-gray-500 hover:text-gray-700">
                 ✕
               </button>
             </div>
             <div>
-              <p>Company Name: {selectedStock.company_name}</p>
-              <p>Quantity: {selectedStock.quantity}</p>
-              <p>Average Price: {selectedStock.average_price.toFixed(2)}$</p>
-              <p>Current Price: {selectedStock.current_price.toFixed(2)}$</p>
-              <p>Current Value: {selectedStock.value.toFixed(2)}$</p>
-              <p>Return: {selectedStock.return}</p>
-              <p>Reurn in USD: {((selectedStock.current_price - selectedStock.average_price)*selectedStock.quantity).toFixed(2)}$</p>
+              <p>Nazwa firmy: {selectedStock.company_name}</p>
+              <p>Ilość: {selectedStock.quantity}</p>
+              <p>Średnia cena: {selectedStock.average_price.toFixed(2)} $</p>
+              <p>Aktualna cena: {selectedStock.current_price.toFixed(2)} $</p>
+              <p>Aktualna wartość: {selectedStock.value.toFixed(2)} $</p>
+              <p>Zwrot: {selectedStock.return}</p>
+              <p>Zwrot w USD: {((selectedStock.current_price - selectedStock.average_price)*selectedStock.quantity).toFixed(2)} $</p>
             </div>
 
             <div className="my-4">
-              <p>Select Timeframe:</p>
+              <p>Wybierz okres:</p>
               <div className="flex flex-wrap">
                 {timeframeOptions.map((option) => (
                   <Button
@@ -511,15 +508,14 @@ const Portfolio: React.FC<PortfolioProps> = ({ userId, portfolioId }) => {
               </div>
             </div>
 
-            {/* Display the graph */}
             <div className="mt-5" style={{ height: '400px' }}>
-              {historicalLoading && <p>Loading historical data...</p>}
+              {historicalLoading && <p>Ładowanie danych historycznych...</p>}
               {historicalError && <p>{historicalError}</p>}
               {!historicalLoading && historicalData && historicalData.length > 0 && chartData && (
                 <Line data={chartData} options={chartOptions} />
               )}
               {!historicalLoading && historicalData && historicalData.length === 0 && (
-                <p>No historical data available for this timeframe.</p>
+                <p>Brak danych historycznych dla wybranego okresu.</p>
               )}
             </div>
           </div>

@@ -96,10 +96,11 @@ const Auth: React.FC<AuthProps> = ({ onUserChange }) => {
     <div className="space-y-4 mb-5">
       {user ? (
         <div>
-          <p>Welcome, {user.email}</p>
-          <Button onClick={handleSignOut}>
-            Sign Out
+          <p>Witaj, {user.email}
+          <Button onClick={handleSignOut} variant="outline" className="ml-5">
+            Wyloguj
           </Button>
+          </p>
         </div>
       ) : (
         <>
